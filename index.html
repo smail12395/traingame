@@ -1,149 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>لعبة السكك</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Train Switch Game</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f0f0f0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      background: #f0f0f0;
     }
-
     .grid {
       display: grid;
       grid-template-columns: repeat(5, 60px);
       grid-template-rows: repeat(5, 60px);
       gap: 2px;
-      margin-bottom: 20px;
+      margin-top: 20px;
     }
-
     .cell {
-      background: #ddd;
-      border: 1px solid #aaa;
+      width: 60px;
+      height: 60px;
+      background: #ccc;
+      border: 1px solid #999;
       position: relative;
     }
-
     .track {
-      background: #999;
+      background-color: #888;
     }
-
     .switch {
-      background: #666;
+      background-color: #555;
       cursor: pointer;
     }
-
-    .train {
-      width: 20px;
-      height: 20px;
-      background: red;
-      border-radius: 50%;
+    .switch.straight::after {
+      content: '↕';
+      color: white;
+      font-size: 20px;
       position: absolute;
-      top: 20px;
-      left: 20px;
-      transition: all 0.4s ease;
+      top: 18px;
+      left: 22px;
     }
-
-    .controls {
-      margin-top: 10px;
+    .switch.turn::after {
+      content: '↱';
+      color: white;
+      font-size: 20px;
+      position: absolute;
+      top: 18px;
+      left: 22px;
+    }
+    .train {
+      width: 100%;
+      height: 100%;
+      background-color: red;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+    .entry {
+      background-color: green;
+    }
+    .exit {
+      background-color: red;
     }
   </style>
 </head>
 <body>
-
-  <h2>🚂 لعبة السكك المبسطة</h2>
-  <div class="grid" id="grid"></div>
-  <div class="controls">
-    <button onclick="startTrain()">ابدأ القطار</button>
-  </div>
-
+  <h1>🚆 لعبة السكك الحديدية</h1>
+  <div id="game" class="grid"></div>
   <script>
-    const grid = document.getElementById("grid");
-    const rows = 5;
-    const cols = 5;
+    const gridSize = 5;
+    const grid = document.getElementById("game");
 
-    const trainPath = [
-      {x: 0, y: 2},
-      {x: 1, y: 2},
-      {x: 2, y: 2}, // switch here
-      {x: 3, y: 2},
-      {x: 4, y: 2}
+    // Map of grid: 0 = empty, T = track, S = switch, E = entry, X = exit
+    const map = [
+      ["E", "T", "S", "T", "X"],
+      ["",  "",  "",  "",  ""],
+      ["",  "",  "",  "",  ""],
+      ["",  "",  "",  "",  ""],
+      ["",  "",  "",  "",  ""]
     ];
 
-    let switchState = "straight"; // or "down"
+    const switches = {}; // Store switch states
+    const train = { x: 0, y: 0, color: "red", dir: "right" };
 
-    // Build grid
-    let cells = [];
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const cell = document.createElement("div");
-        cell.classList.add("cell");
+    function createCell(x, y, type) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      if (type === "T") cell.classList.add("track");
+      if (type === "S") {
+        cell.classList.add("switch", "straight");
+        switches[`${x},${y}`] = "straight";
+        cell.addEventListener("click", () => toggleSwitch(x, y, cell));
+      }
+      if (type === "E") cell.classList.add("entry");
+      if (type === "X") cell.classList.add("exit");
+      cell.id = `cell-${x}-${y}`;
+      grid.appendChild(cell);
+    }
 
-        // add horizontal track on row 2
-        if (y === 2) cell.classList.add("track");
+    function toggleSwitch(x, y, el) {
+      const current = switches[`${x},${y}`];
+      const next = current === "straight" ? "turn" : "straight";
+      switches[`${x},${y}`] = next;
+      el.classList.toggle("straight");
+      el.classList.toggle("turn");
+    }
 
-        // add switch
-        if (x === 2 && y === 2) {
-          cell.classList.add("switch");
-          cell.title = "Click to change direction";
-          cell.addEventListener("click", () => {
-            switchState = switchState === "straight" ? "down" : "straight";
-            updateSwitchVisual();
-          });
+    function drawGrid() {
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          createCell(x, y, map[y][x]);
         }
-
-        grid.appendChild(cell);
-        cells.push(cell);
       }
     }
 
-    // Create train
-    const train = document.createElement("div");
-    train.classList.add("train");
-    cells[2].appendChild(train); // position at (0,2)
-
-    function getCell(x, y) {
-      return cells[y * cols + x];
+    function placeTrain() {
+      const cell = document.getElementById(`cell-${train.x}-${train.y}`);
+      const t = document.createElement("div");
+      t.className = "train";
+      t.style.backgroundColor = train.color;
+      cell.appendChild(t);
     }
 
-    function updateSwitchVisual() {
-      const switchCell = getCell(2, 2);
-      switchCell.style.background = switchState === "straight" ? "#666" : "#2e8b57";
+    function moveTrain() {
+      const dirMap = {
+        right: [1, 0],
+        down: [0, 1],
+        turn: [0, 1],
+      };
+      const [dx, dy] = dirMap[train.dir];
+
+      const prevCell = document.getElementById(`cell-${train.x}-${train.y}`);
+      prevCell.innerHTML = "";
+
+      train.x += dx;
+      train.y += dy;
+
+      const key = `${train.x},${train.y}`;
+      if (switches[key]) {
+        train.dir = switches[key] === "straight" ? "right" : "down";
+      }
+
+      const cell = document.getElementById(`cell-${train.x}-${train.y}`);
+      if (!cell || cell.classList.contains("cell") === false) {
+        alert("💥 تصادم القطار أو خرج عن المسار! حاول مرة أخرى.");
+        location.reload();
+        return;
+      }
+      if (cell.classList.contains("exit")) {
+        alert("🎉 وصلت القطار بنجاح!");
+        return;
+      }
+
+      const t = document.createElement("div");
+      t.className = "train";
+      t.style.backgroundColor = train.color;
+      cell.appendChild(t);
     }
 
-    function startTrain() {
-      let index = 0;
+    drawGrid();
+    placeTrain();
 
-      const interval = setInterval(() => {
-        const pos = trainPath[index];
-        const next = trainPath[index + 1];
-
-        if (!next) {
-          clearInterval(interval);
-          return;
-        }
-
-        if (pos.x === 2 && pos.y === 2 && switchState === "down") {
-          // If switch turned, go down instead
-          moveTrain(2, 3); // down
-          clearInterval(interval);
-          return;
-        }
-
-        moveTrain(next.x, next.y);
-        index++;
-      }, 700);
-    }
-
-    function moveTrain(x, y) {
-      const targetCell = getCell(x, y);
-      targetCell.appendChild(train);
-    }
-
-    updateSwitchVisual();
+    setInterval(() => {
+      moveTrain();
+    }, 1000);
   </script>
 </body>
 </html>
