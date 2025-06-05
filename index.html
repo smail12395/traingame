@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>لعبة سكك القطارات</title>
-  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
-  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+<link rel="stylesheet" href="https://pyscript.net/2023.05.1/pyscript.css" />
+<script defer src="https://pyscript.net/2023.05.1/pyscript.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     body {
@@ -140,7 +140,7 @@ async def move_trains(grid):
         await asyncio.sleep(1)
         for train in trains:
             current = train["position"]
-            next_pos = current + GRID_SIZE  # النزول للأسفل فقط
+            next_pos = current + GRID_SIZE
             if next_pos >= GRID_SIZE * GRID_SIZE:
                 continue
             next_cell = grid.children[next_pos]
@@ -154,6 +154,7 @@ async def move_trains(grid):
             elif "track" in next_cell.className:
                 next_cell.appendChild(train["element"])
                 train["position"] = next_pos
+
   </py-script>
 </body>
 </html>
