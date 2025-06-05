@@ -1,162 +1,149 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>لعبة سكك القطارات</title>
-<link rel="stylesheet" href="https://pyscript.net/2023.05.1/pyscript.css" />
-<script defer src="https://pyscript.net/2023.05.1/pyscript.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <title>لعبة السكك</title>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f0f0f0;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-      direction: rtl;
-    }
-
-    .title {
-      background: #333;
-      color: #fff;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 20px;
-      margin: 0;
     }
 
-    button {
-      margin: 20px auto;
-      padding: 10px 20px;
-      font-size: 18px;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-
-    #game-grid {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(10, 40px);
-      grid-template-rows: repeat(10, 40px);
+      grid-template-columns: repeat(5, 60px);
+      grid-template-rows: repeat(5, 60px);
       gap: 2px;
-      justify-content: center;
-      margin: 20px auto;
+      margin-bottom: 20px;
     }
 
     .cell {
-      width: 40px;
-      height: 40px;
-      background-color: #ccc;
+      background: #ddd;
+      border: 1px solid #aaa;
       position: relative;
-      border: 1px solid #999;
     }
 
     .track {
-      background-color: #888;
+      background: #999;
     }
 
     .switch {
-      background-color: #ffcc00;
+      background: #666;
       cursor: pointer;
     }
 
     .train {
-      width: 30px;
-      height: 30px;
+      width: 20px;
+      height: 20px;
+      background: red;
       border-radius: 50%;
       position: absolute;
-      top: 5px;
-      left: 5px;
+      top: 20px;
+      left: 20px;
+      transition: all 0.4s ease;
     }
 
-    .exit {
-      background-color: #222;
+    .controls {
+      margin-top: 10px;
     }
-
-    .red { background-color: red; }
-    .blue { background-color: blue; }
-    .green { background-color: green; }
   </style>
 </head>
 <body>
-  <h1 class="title">🚆 لعبة سكك القطارات</h1>
-  <button onclick="location.reload()">🔄 جولة جديدة</button>
-  <div id="game-grid"></div>
 
-  <py-script>
-from js import document
-import random
-import asyncio
+  <h2>🚂 لعبة السكك المبسطة</h2>
+  <div class="grid" id="grid"></div>
+  <div class="controls">
+    <button onclick="startTrain()">ابدأ القطار</button>
+  </div>
 
-GRID_SIZE = 10
-trains = []
-exits = {}
+  <script>
+    const grid = document.getElementById("grid");
+    const rows = 5;
+    const cols = 5;
 
-COLORS = ['red', 'blue', 'green']
+    const trainPath = [
+      {x: 0, y: 2},
+      {x: 1, y: 2},
+      {x: 2, y: 2}, // switch here
+      {x: 3, y: 2},
+      {x: 4, y: 2}
+    ];
 
-# توليد الشبكة
-async def generate_grid():
-    grid = document.getElementById("game-grid")
-    grid.innerHTML = ""
-    for row in range(GRID_SIZE):
-        for col in range(GRID_SIZE):
-            div = document.createElement("div")
-            div.classList.add("cell")
-            if random.random() < 0.4:
-                div.classList.add("track")
-                if random.random() < 0.2:
-                    div.classList.add("switch")
-                    div.innerHTML = "↕"
-                    def toggle(event, el=div):
-                        el.innerHTML = "↔" if el.innerHTML == "↕" else "↕"
-                    div.addEventListener("click", toggle)
-            grid.appendChild(div)
+    let switchState = "straight"; // or "down"
 
-    # ضع المخارج
-    for i, color in enumerate(COLORS):
-        exit_cell = grid.children[(GRID_SIZE-1)*GRID_SIZE + i*3]
-        exit_cell.classList.add("exit")
-        exit_cell.classList.add(color)
-        exits[color] = exit_cell
+    // Build grid
+    let cells = [];
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
 
-    # أضف القطارات
-    await add_trains(grid)
+        // add horizontal track on row 2
+        if (y === 2) cell.classList.add("track");
 
-# إنشاء القطارات
-async def add_trains(grid):
-    for i, color in enumerate(COLORS):
-        cell = grid.children[i]
-        train = document.createElement("div")
-        train.classList.add("train")
-        train.classList.add(color)
-        cell.appendChild(train)
-        trains.append({"element": train, "color": color, "position": i})
+        // add switch
+        if (x === 2 && y === 2) {
+          cell.classList.add("switch");
+          cell.title = "Click to change direction";
+          cell.addEventListener("click", () => {
+            switchState = switchState === "straight" ? "down" : "straight";
+            updateSwitchVisual();
+          });
+        }
 
-    await move_trains(grid)
+        grid.appendChild(cell);
+        cells.push(cell);
+      }
+    }
 
-# تحريك القطارات
-async def move_trains(grid):
-    while True:
-        await asyncio.sleep(1)
-        for train in trains:
-            current = train["position"]
-            next_pos = current + GRID_SIZE
-            if next_pos >= GRID_SIZE * GRID_SIZE:
-                continue
-            next_cell = grid.children[next_pos]
-            if "exit" in next_cell.className:
-                if train["color"] in next_cell.className:
-                    next_cell.appendChild(train["element"])
-                    train["position"] = next_pos
-                    print(f"✅ القطار {train['color']} وصل لمخرجه الصحيح")
-                else:
-                    print(f"❌ القطار {train['color']} دخل مخرج خاطئ!")
-            elif "track" in next_cell.className:
-                next_cell.appendChild(train["element"])
-                train["position"] = next_pos
-await generate_grid()
+    // Create train
+    const train = document.createElement("div");
+    train.classList.add("train");
+    cells[2].appendChild(train); // position at (0,2)
 
+    function getCell(x, y) {
+      return cells[y * cols + x];
+    }
 
-  </py-script>
+    function updateSwitchVisual() {
+      const switchCell = getCell(2, 2);
+      switchCell.style.background = switchState === "straight" ? "#666" : "#2e8b57";
+    }
+
+    function startTrain() {
+      let index = 0;
+
+      const interval = setInterval(() => {
+        const pos = trainPath[index];
+        const next = trainPath[index + 1];
+
+        if (!next) {
+          clearInterval(interval);
+          return;
+        }
+
+        if (pos.x === 2 && pos.y === 2 && switchState === "down") {
+          // If switch turned, go down instead
+          moveTrain(2, 3); // down
+          clearInterval(interval);
+          return;
+        }
+
+        moveTrain(next.x, next.y);
+        index++;
+      }, 700);
+    }
+
+    function moveTrain(x, y) {
+      const targetCell = getCell(x, y);
+      targetCell.appendChild(train);
+    }
+
+    updateSwitchVisual();
+  </script>
 </body>
 </html>
