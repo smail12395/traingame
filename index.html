@@ -154,6 +154,8 @@ async def move_trains(grid):
             elif "track" in next_cell.className:
                 next_cell.appendChild(train["element"])
                 train["position"] = next_pos
+await generate_grid()
+
 
   </py-script>
 </body>
