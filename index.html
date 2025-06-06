@@ -1,215 +1,828 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-    <title>Train Puzzle</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Tracks - لعبة توجيه القطارات</title>
     <style>
-        #gameCanvas {
-            background-color: #eee;
-            border: 1px solid black;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        #controls {
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            max-width: 800px;
+            line-height: 1.6;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .left-panel {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-board {
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .panel-section {
+            margin-bottom: 25px;
+            background: rgba(40, 40, 60, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #555;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #FFD700;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-left: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .control-item {
+            background: rgba(60, 60, 80, 0.8);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .control-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(80, 80, 100, 0.9);
+        }
+        
+        .key {
+            display: inline-block;
+            background: #333;
+            color: #FFD700;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin: 5px;
+            border: 2px solid #555;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            background: rgba(60, 60, 80, 0.8);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #FFD700;
+            margin-top: 5px;
+        }
+        
+        .trains-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .train-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            border: 2px solid #fff;
+        }
+        
+        .train-red { background: #FF5252; }
+        .train-blue { background: #42A5F5; }
+        .train-green { background: #66BB6A; }
+        .train-orange { background: #FFA726; }
+        
+        button {
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(to bottom, #66BB6A, #388E3C);
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 15px;
             margin-top: 20px;
-            font-family: sans-serif;
+            max-width: 1000px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .instructions h2 {
+            color: #FFD700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .instructions-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .instruction-card {
+            background: rgba(40, 40, 60, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #555;
+        }
+        
+        .instruction-card h3 {
+            color: #4FC3F7;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .instruction-card h3 i {
+            margin-left: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 100;
+            border: 3px solid #B71C1C;
+            box-shadow: 0 0 30px rgba(183, 28, 28, 0.7);
+            display: none;
+            max-width: 90%;
+        }
+        
+        .game-over h2 {
+            font-size: 2.5rem;
+            color: #FF5252;
+            margin-bottom: 20px;
+        }
+        
+        .win-screen {
+            border: 3px solid #4CAF50;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.7);
+        }
+        
+        .win-screen h2 {
+            color: #66BB6A;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        
+        .legend-track { background: #808080; }
+        .legend-tie { background: #a0522d; }
+        .legend-switch { background: #000; }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .left-panel {
+                width: 100%;
+                max-width: 500px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="controls">
-        <p>Controls:</p>
-        <p>A: Switch 1</p>
-        <p>F: Switch 2</p>
-        <p>O: Switch 3</p>
+    <div class="header">
+        <h1>🚂 Train Tracks - لعبة توجيه القطارات</h1>
+        <p class="subtitle">
+            لعبة ألغاز ممتعة تعتمد على المنطق والتخطيط الاستراتيجي. تتحكم في اتجاه حركة القطارات عن طريق تغيير اتجاه المحولات (switches) على مسارات السكك الحديدية المتشابكة. الهدف هو توجيه كل قطار إلى المخرج المطابق للونه، وتجنب توجيه القطارات إلى مسارات خاطئة.
+        </p>
+    </div>
+    
+    <div class="game-container">
+        <div class="left-panel">
+            <div class="panel-section">
+                <h2 class="section-title"><i>🎮</i> عناصر التحكم</h2>
+                <div class="controls">
+                    <div class="control-item">
+                        <p>المفتاح <span class="key">A</span></p>
+                        <p>تغيير المحول 1</p>
+                    </div>
+                    <div class="control-item">
+                        <p>المفتاح <span class="key">F</span></p>
+                        <p>تغيير المحول 2</p>
+                    </div>
+                    <div class="control-item">
+                        <p>المفتاح <span class="key">O</span></p>
+                        <p>تغيير المحول 3</p>
+                    </div>
+                    <div class="control-item">
+                        <p>زر الماوس</p>
+                        <p>النقر على المحولات</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h2 class="section-title"><i>📊</i> إحصائيات اللعبة</h2>
+                <div class="stats">
+                    <div class="stat-item">
+                        <p>النقاط</p>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <p>القطارات المتبقية</p>
+                        <div class="stat-value" id="trains-left">4</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h2 class="section-title"><i>🚂</i> معلومات القطارات</h2>
+                <div class="trains-info">
+                    <div>القطار الأحمر <span class="train-color train-red"></span></div>
+                    <div>القطار الأزرق <span class="train-color train-blue"></span></div>
+                    <div>القطار الأخضر <span class="train-color train-green"></span></div>
+                    <div>القطار البرتقالي <span class="train-color train-orange"></span></div>
+                </div>
+            </div>
+            
+            <button id="restart-btn">إعادة تشغيل اللعبة</button>
+        </div>
+        
+        <div class="game-board">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+            <div class="game-over" id="game-over">
+                <h2>انتهت اللعبة!</h2>
+                <p id="game-over-reason">توجه قطار إلى مسار خاطئ</p>
+                <p>النقاط النهائية: <span id="final-score">0</span></p>
+                <button id="play-again-btn">العب مرة أخرى</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2>📚 كيفية اللعب</h2>
+        <div class="instructions-content">
+            <div class="instruction-card">
+                <h3><i>🎯</i> هدف اللعبة</h3>
+                <p>يجب عليك توجيه كل قطار إلى المخرج المطابق للونه. استخدم مفاتيح A, F, O لتغيير اتجاه المحولات وتوجيه القطارات.</p>
+            </div>
+            <div class="instruction-card">
+                <h3><i>⚠️</i> تجنب الأخطاء</h3>
+                <p>إذا توجه قطار إلى مسار خاطئ، ستنتهي اللعبة. كن حذرًا في اختيارك للمحولات وتوقيت تغييرها.</p>
+            </div>
+            <div class="instruction-card">
+                <h3><i>🏆</i> نظام النقاط</h3>
+                <p>تحصل على 100 نقطة لكل قطار تنجح في توجيهه إلى المخرج الصحيح. حاول الحصول على أقصى عدد من النقاط!</p>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-color legend-track"></span>
+                <span>المسارات</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color legend-tie"></span>
+                <span>روابط المسارات</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color legend-switch"></span>
+                <span>المحولات</span>
+            </div>
+        </div>
     </div>
 
     <script>
+        // عناصر DOM
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const trainsLeftElement = document.getElementById('trains-left');
+        const restartBtn = document.getElementById('restart-btn');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const gameOverScreen = document.getElementById('game-over');
+        const gameOverReason = document.getElementById('game-over-reason');
+        const finalScoreElement = document.getElementById('final-score');
 
-        // --- Constants ---
-        const TRAIN_WIDTH = 20;
-        const TRAIN_HEIGHT = 15;
-        const TRAIN_SPEED = 1;
-
-        const SWITCH_WIDTH = 30;
-        const SWITCH_HEIGHT = 10;
-
-        const RAIL_WIDTH = 10;
-        const RAIL_TIE_WIDTH = 5;
-
-        // --- Game State ---
+        // متغيرات اللعبة
+        let score = 0;
+        let trainsLeft = 4;
+        let gameActive = true;
         let trains = [];
-        let switches = [
-            { x: 200, y: 150, state: 0 }, // Switch 1 (0: top, 1: bottom)
-            { x: 400, y: 75, state: 0 },  // Switch 2 (0: top, 1: bottom)
-            { x: 400, y: 225, state: 0 }   // Switch 3 (0: top, 1: bottom)
-        ];
+        let endpoints = [];
+        let switches = [];
+        let tracks = [];
 
-        const endpoints = [
-          {x: 600, y: 50},
-          {x: 600, y: 100},
-          {x: 600, y: 200},
-          {x: 600, y: 250}
-        ];
+        // تعريف الألوان
+        const colors = {
+            red: '#FF5252',
+            blue: '#42A5F5',
+            green: '#66BB6A',
+            orange: '#FFA726',
+            track: '#808080',
+            tie: '#a0522d',
+            switch: '#000000',
+            background: '#f0f0f0'
+        };
 
-
-        // --- Train Data ---
-        const trainColors = ['red', 'blue', 'green', 'orange'];
-        let trainSpawnTimer = 0;
-        const trainSpawnInterval = 150; // Frames
-
-        // --- Functions ---
-
-        function drawRail(x1, y1, x2, y2) {
-            ctx.strokeStyle = 'gray';
-            ctx.lineWidth = RAIL_WIDTH;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-
-            // Draw rail ties
-            const numTies = Math.floor(Math.sqrt((x2 - x1)**2 + (y2 - y1)**2) / 20);
-            for (let i = 0; i < numTies; i++) {
-                const tieX = x1 + (x2 - x1) * (i / numTies);
-                const tieY = y1 + (y2 - y1) * (i / numTies);
-                ctx.fillStyle = 'brown';
-                ctx.fillRect(tieX - RAIL_TIE_WIDTH / 2, tieY - RAIL_WIDTH / 2, RAIL_TIE_WIDTH, RAIL_WIDTH);
+        // تعريف فئات الكائنات
+        class Track {
+            constructor(id, start, end, direction) {
+                this.id = id;
+                this.start = start;
+                this.end = end;
+                this.direction = direction; // 'horizontal', 'vertical', 'curve'
+                this.length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
             }
-        }
-
-        function drawSwitch(x, y, state) {
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-
-            if (state === 0) {
-                // Top path
-                ctx.moveTo(x, y);
-                ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y - 15, x + SWITCH_WIDTH, y - 10);
-            } else {
-                // Bottom path
-                ctx.moveTo(x, y);
-                ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y + 15, x + SWITCH_WIDTH, y + 10);
-            }
-            ctx.stroke();
-        }
-
-        function drawTrain(train) {
-            ctx.fillStyle = train.color;
-            ctx.fillRect(train.x, train.y, TRAIN_WIDTH, TRAIN_HEIGHT);
-        }
-
-       function updateTrain(train) {
-            // Basic path following
-            if (train.x < switches[0].x) {
-                train.x += TRAIN_SPEED; // Move right to switch 1
-            } else if (train.x >= switches[0].x && train.x < switches[0].x + SWITCH_WIDTH) {
-                // At switch 1
-                if (switches[0].state === 0) {
-                    train.x += TRAIN_SPEED; // Continue on top path
+            
+            draw() {
+                // رسم المسار
+                ctx.strokeStyle = colors.track;
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(this.start.x, this.start.y);
+                
+                if (this.direction === 'curve') {
+                    // منحنى بسيط
+                    const cp1x = (this.start.x + this.end.x) / 2;
+                    const cp1y = this.start.y;
+                    const cp2x = cp1x;
+                    const cp2y = this.end.y;
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, this.end.x, this.end.y);
                 } else {
-                    train.x += TRAIN_SPEED;
-                    train.y = 250;
+                    ctx.lineTo(this.end.x, this.end.y);
                 }
-            } else if (train.x >= switches[0].x + SWITCH_WIDTH && train.y < switches[1].y && switches[0].state == 0) {
-              train.x += TRAIN_SPEED;
-              train.y = 50;
-            }
-            else if (train.x >= switches[0].x + SWITCH_WIDTH && train.y > switches[2].y && switches[0].state == 1) {
-              train.x += TRAIN_SPEED;
-              train.y = 200;
-            }
-            else if(train.x >= switches[1].x && train.x < switches[1].x + SWITCH_WIDTH){
-                if (switches[1].state === 0) {
-                    train.x += TRAIN_SPEED; // Continue on top path
-                } else {
-                    train.x += TRAIN_SPEED;
-                    train.y = 75;
+                
+                ctx.stroke();
+                
+                // رسم الروابط (ties)
+                const numTies = Math.floor(this.length / 20);
+                ctx.fillStyle = colors.tie;
+                
+                for (let i = 0; i <= numTies; i++) {
+                    const t = i / numTies;
+                    const x = this.start.x + (this.end.x - this.start.x) * t;
+                    const y = this.start.y + (this.end.y - this.start.y) * t;
+                    
+                    // تحديد اتجاه الرابط
+                    if (this.direction === 'horizontal') {
+                        ctx.fillRect(x - 15, y - 3, 30, 6);
+                    } else if (this.direction === 'vertical') {
+                        ctx.fillRect(x - 3, y - 15, 6, 30);
+                    } else {
+                        // للمنحنيات، نستخدم زوايا أبسط
+                        const angle = Math.atan2(this.end.y - this.start.y, this.end.x - this.start.x);
+                        const dx = Math.sin(angle) * 15;
+                        const dy = Math.cos(angle) * 15;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(x - dx, y + dy);
+                        ctx.lineTo(x + dx, y - dy);
+                        ctx.lineWidth = 4;
+                        ctx.strokeStyle = colors.tie;
+                        ctx.stroke();
+                    }
                 }
             }
+        }
 
-             else if(train.x >= switches[2].x && train.x < switches[2].x + SWITCH_WIDTH){
-                if (switches[2].state === 0) {
-                    train.x += TRAIN_SPEED; // Continue on top path
+        class Switch {
+            constructor(id, position, state, connectedTracks) {
+                this.id = id;
+                this.position = position;
+                this.state = state; // 0 or 1
+                this.connectedTracks = connectedTracks;
+                this.radius = 12;
+            }
+            
+            draw() {
+                // رسم قاعدة المحول
+                ctx.fillStyle = colors.switch;
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // رسم مؤشر الحالة
+                ctx.strokeStyle = this.state === 0 ? colors.red : colors.green;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                if (this.state === 0) {
+                    // خط أفقي
+                    ctx.moveTo(this.position.x - 8, this.position.y);
+                    ctx.lineTo(this.position.x + 8, this.position.y);
                 } else {
-                    train.x += TRAIN_SPEED;
-                    train.y = 225;
+                    // خط عمودي
+                    ctx.moveTo(this.position.x, this.position.y - 8);
+                    ctx.lineTo(this.position.x, this.position.y + 8);
                 }
+                
+                ctx.stroke();
+                
+                // إضافة معرف للمحول
+                ctx.fillStyle = '#FFF';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`محول ${this.id}`, this.position.x, this.position.y - 20);
             }
-             else {
-                train.x += TRAIN_SPEED;
-             }
-
-            // Add more logic to handle switches 2 and 3, and the final paths to endpoints
-        }
-
-        function spawnTrain() {
-            const colorIndex = Math.floor(Math.random() * trainColors.length);
-            const color = trainColors[colorIndex];
-            trains.push({ x: 50, y: 150, color: color }); // Start position
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw rails
-            drawRail(50, 150, switches[0].x, 150); // Initial rail to switch 1
-
-            // Switch 1
-            drawRail(switches[0].x + SWITCH_WIDTH, 140, 300, 75); // Top path from switch 1
-            drawRail(switches[0].x + SWITCH_WIDTH, 160, 300, 225); // Bottom path from switch 1
-
-            // Switches 2 and 3
-            drawRail(300, 75, switches[1].x, 75); // Rail to switch 2
-            drawRail(300, 225, switches[2].x, 225); // Rail to switch 3
-
-            // Switch 2
-            drawRail(switches[1].x + SWITCH_WIDTH, 75, 600, 50); // Top path from switch 2
-            drawRail(switches[1].x + SWITCH_WIDTH, 75, 600, 100); // Bottom path from switch 2
-
-            // Switch 3
-            drawRail(switches[2].x + SWITCH_WIDTH, 225, 600, 200); // Top path from switch 3
-            drawRail(switches[2].x + SWITCH_WIDTH, 225, 600, 250); // Bottom path from switch 3
-
-            // Draw switches
-            switches.forEach(sw => drawSwitch(sw.x, sw.y, sw.state));
-
-            // Draw trains
-            trains.forEach(train => drawTrain(train));
-        }
-
-        function update() {
-            trains.forEach(updateTrain);
-
-            // Spawn trains periodically
-            trainSpawnTimer++;
-            if (trainSpawnTimer > trainSpawnInterval) {
-                spawnTrain();
-                trainSpawnTimer = 0;
+            
+            toggle() {
+                this.state = this.state === 0 ? 1 : 0;
+            }
+            
+            isClicked(x, y) {
+                const distance = Math.sqrt(Math.pow(x - this.position.x, 2) + Math.pow(y - this.position.y, 2));
+                return distance <= this.radius;
             }
         }
 
+        class Train {
+            constructor(id, color, startTrack, speed = 0.5) {
+                this.id = id;
+                this.color = color;
+                this.currentTrack = startTrack;
+                this.position = {...startTrack.start};
+                this.progress = 0; // 0 to 1
+                this.speed = speed;
+                this.size = 20;
+                this.active = true;
+            }
+            
+            update() {
+                if (!this.active) return;
+                
+                this.progress += this.speed / this.currentTrack.length;
+                
+                if (this.progress >= 1) {
+                    // البحث عن المسار التالي
+                    const nextTrack = findNextTrack(this);
+                    if (nextTrack) {
+                        this.currentTrack = nextTrack;
+                        this.progress = 0;
+                    } else {
+                        // الوصول إلى نهاية المسار
+                        this.active = false;
+                        trainsLeft--;
+                        trainsLeftElement.textContent = trainsLeft;
+                        
+                        // التحقق مما إذا كان هذا المخرج الصحيح
+                        const endpoint = endpoints.find(ep => 
+                            ep.color === this.color && 
+                            distance(ep.position, this.position) < 30
+                        );
+                        
+                        if (endpoint) {
+                            // مخرج صحيح
+                            score += 100;
+                            scoreElement.textContent = score;
+                            
+                            // التحقق من الفوز
+                            if (trainsLeft === 0) {
+                                endGame(true);
+                            }
+                        } else {
+                            // مخرج خاطئ
+                            endGame(false, this.color);
+                        }
+                        return;
+                    }
+                }
+                
+                // تحديث موقع القطار
+                const dx = this.currentTrack.end.x - this.currentTrack.start.x;
+                const dy = this.currentTrack.end.y - this.currentTrack.start.y;
+                this.position.x = this.currentTrack.start.x + dx * this.progress;
+                this.position.y = this.currentTrack.start.y + dy * this.progress;
+            }
+            
+            draw() {
+                if (!this.active) return;
+                
+                // رسم جسم القطار
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.position.x - this.size/2, this.position.y - this.size/2, this.size, this.size);
+                
+                // رسم نوافذ القطار
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(this.position.x - this.size/2 + 2, this.position.y - this.size/2 + 2, 6, 6);
+                ctx.fillRect(this.position.x + this.size/2 - 8, this.position.y - this.size/2 + 2, 6, 6);
+                
+                // رسم عجلات القطار
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(this.position.x - 5, this.position.y + this.size/2 - 2, 3, 0, Math.PI * 2);
+                ctx.arc(this.position.x + 5, this.position.y + this.size/2 - 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // إضافة لون القطار
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`قطار ${this.id}`, this.position.x, this.position.y - 15);
+            }
+        }
+
+        class Endpoint {
+            constructor(id, color, position) {
+                this.id = id;
+                this.color = color;
+                this.position = position;
+                this.radius = 25;
+            }
+            
+            draw() {
+                // رسم الدائرة الخارجية
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // رسم الدائرة الداخلية
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius - 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // إضافة نص "نهاية"
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('نهاية', this.position.x, this.position.y + 5);
+            }
+        }
+
+        // وظائف مساعدة
+        function distance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        function findNextTrack(train) {
+            // في هذا التطبيق المبسط، نجد المسار الأقرب في اتجاه حركة القطار
+            const currentEnd = train.currentTrack.end;
+            const possibleTracks = tracks.filter(track => 
+                track.id !== train.currentTrack.id && 
+                distance(track.start, currentEnd) < 5
+            );
+            
+            // إذا كان هناك محول، نستخدم حالته لتحديد المسار
+            const sw = switches.find(s => distance(s.position, currentEnd) < 20);
+            if (sw && possibleTracks.length > 1) {
+                return possibleTracks[sw.state];
+            }
+            
+            return possibleTracks[0];
+        }
+
+        // تهيئة اللعبة
+        function initGame() {
+            // إعادة تعيين الحالة
+            score = 0;
+            trainsLeft = 4;
+            gameActive = true;
+            trains = [];
+            endpoints = [];
+            switches = [];
+            tracks = [];
+            
+            // تحديث واجهة المستخدم
+            scoreElement.textContent = score;
+            trainsLeftElement.textContent = trainsLeft;
+            gameOverScreen.style.display = 'none';
+            
+            // إنشاء المسارات
+            tracks.push(new Track('T1', {x: 50, y: 150}, {x: 250, y: 150}, 'horizontal'));
+            tracks.push(new Track('T2', {x: 250, y: 150}, {x: 450, y: 150}, 'horizontal'));
+            tracks.push(new Track('T3', {x: 250, y: 150}, {x: 250, y: 350}, 'vertical'));
+            tracks.push(new Track('T4', {x: 250, y: 350}, {x: 450, y: 350}, 'horizontal'));
+            tracks.push(new Track('T5', {x: 450, y: 150}, {x: 450, y: 350}, 'vertical'));
+            tracks.push(new Track('T6', {x: 50, y: 350}, {x: 250, y: 350}, 'horizontal'));
+            tracks.push(new Track('T7', {x: 50, y: 150}, {x: 50, y: 350}, 'vertical'));
+            
+            // إنشاء المحولات
+            switches.push(new Switch('1', {x: 250, y: 150}, 0, ['T2', 'T3']));
+            switches.push(new Switch('2', {x: 450, y: 150}, 0, ['T5']));
+            switches.push(new Switch('3', {x: 250, y: 350}, 0, ['T4']));
+            
+            // إنشاء المخارج
+            endpoints.push(new Endpoint('E1', colors.red, {x: 450, y: 150}));
+            endpoints.push(new Endpoint('E2', colors.blue, {x: 450, y: 350}));
+            endpoints.push(new Endpoint('E3', colors.green, {x: 50, y: 350}));
+            endpoints.push(new Endpoint('E4', colors.orange, {x: 50, y: 150}));
+            
+            // إنشاء القطارات
+            trains.push(new Train('1', colors.red, tracks[0]));
+            trains.push(new Train('2', colors.blue, tracks[3]));
+            trains.push(new Train('3', colors.green, tracks[5]));
+            trains.push(new Train('4', colors.orange, tracks[6]));
+            
+            // البدء في حلقة اللعبة
+            gameLoop();
+        }
+
+        // حلقة اللعبة الرئيسية
         function gameLoop() {
-            update();
-            draw();
+            if (!gameActive) return;
+            
+            // مسح اللوحة
+            ctx.fillStyle = colors.background;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // رسم المسارات
+            tracks.forEach(track => track.draw());
+            
+            // رسم المحولات
+            switches.forEach(sw => sw.draw());
+            
+            // رسم المخارج
+            endpoints.forEach(endpoint => endpoint.draw());
+            
+            // تحديث ورسم القطارات
+            trains.forEach(train => {
+                train.update();
+                train.draw();
+            });
+            
+            // الاستمرار في حلقة اللعبة
             requestAnimationFrame(gameLoop);
         }
 
-        // --- Event Listeners ---
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'a' || event.key === 'A') {
-                switches[0].state = 1 - switches[0].state; // Toggle switch 1
-            } else if (event.key === 'f' || event.key === 'F') {
-                switches[1].state = 1 - switches[1].state; // Toggle switch 2
-            } else if (event.key === 'o' || event.key === 'O') {
-                switches[2].state = 1 - switches[2].state; // Toggle switch 3
+        // إنهاء اللعبة
+        function endGame(isWin, color = '') {
+            gameActive = false;
+            gameOverScreen.style.display = 'block';
+            finalScoreElement.textContent = score;
+            
+            if (isWin) {
+                gameOverScreen.classList.add('win-screen');
+                gameOverReason.textContent = 'مبروك! لقد نجحت في توجيه جميع القطارات إلى مخارجها الصحيحة!';
+                gameOverScreen.querySelector('h2').textContent = 'لقد فزت!';
+            } else {
+                gameOverScreen.classList.remove('win-screen');
+                gameOverReason.textContent = `القطار ${color} توجه إلى مسار خاطئ!`;
+            }
+        }
+
+        // معالجة أحداث لوحة المفاتيح
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            
+            switch (e.key.toUpperCase()) {
+                case 'A':
+                    switches[0].toggle();
+                    break;
+                case 'F':
+                    switches[1].toggle();
+                    break;
+                case 'O':
+                    switches[2].toggle();
+                    break;
             }
         });
 
-        // --- Start Game ---
-        gameLoop();
+        // معالجة أحداث الماوس
+        canvas.addEventListener('click', (e) => {
+            if (!gameActive) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // التحقق مما إذا تم النقر على أي محول
+            for (const sw of switches) {
+                if (sw.isClicked(x, y)) {
+                    sw.toggle();
+                    break;
+                }
+            }
+        });
+
+        // أحداث الأزرار
+        restartBtn.addEventListener('click', initGame);
+        playAgainBtn.addEventListener('click', initGame);
+
+        // بدء اللعبة عند تحميل الصفحة
+        window.onload = initGame;
     </script>
 </body>
 </html>
