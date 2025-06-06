@@ -1,171 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Train Switch Game</title>
+    <title>Train Puzzle</title>
+    <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: #f0f0f0;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(5, 60px);
-      grid-template-rows: repeat(5, 60px);
-      gap: 2px;
-      margin-top: 20px;
-    }
-    .cell {
-      width: 60px;
-      height: 60px;
-      background: #ccc;
-      border: 1px solid #999;
-      position: relative;
-    }
-    .track {
-      background-color: #888;
-    }
-    .switch {
-      background-color: #555;
-      cursor: pointer;
-    }
-    .switch.straight::after {
-      content: '↕';
-      color: white;
-      font-size: 20px;
-      position: absolute;
-      top: 18px;
-      left: 22px;
-    }
-    .switch.turn::after {
-      content: '↱';
-      color: white;
-      font-size: 20px;
-      position: absolute;
-      top: 18px;
-      left: 22px;
-    }
-    .train {
-      width: 100%;
-      height: 100%;
-      background-color: red;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 2;
-    }
-    .entry {
-      background-color: green;
-    }
-    .exit {
-      background-color: red;
-    }
+    #gameCanvas {
+    background-color: #eee;
+    border: 1px solid black;
+}
+
+#controls {
+    margin-top: 20px;
+    font-family: sans-serif;
+}
   </style>
 </head>
 <body>
-  <h1>🚆 لعبة السكك الحديدية</h1>
-  <div id="game" class="grid"></div>
-  <script>
-    const gridSize = 5;
-    const grid = document.getElementById("game");
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="controls">
+        <p>Controls:</p>
+        <p>A: Switch 1</p>
+        <p>F: Switch 2</p>
+        <p>O: Switch 3</p>
+    </div>
+  
+    <script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-    // Map of grid: 0 = empty, T = track, S = switch, E = entry, X = exit
-    const map = [
-      ["E", "T", "S", "T", "X"],
-      ["",  "",  "",  "",  ""],
-      ["",  "",  "",  "",  ""],
-      ["",  "",  "",  "",  ""],
-      ["",  "",  "",  "",  ""]
-    ];
+// --- Constants ---
+const TRAIN_WIDTH = 20;
+const TRAIN_HEIGHT = 15;
+const TRAIN_SPEED = 1;
 
-    const switches = {}; // Store switch states
-    const train = { x: 0, y: 0, color: "red", dir: "right" };
+const SWITCH_WIDTH = 30;
+const SWITCH_HEIGHT = 10;
 
-    function createCell(x, y, type) {
-      const cell = document.createElement("div");
-      cell.classList.add("cell");
-      if (type === "T") cell.classList.add("track");
-      if (type === "S") {
-        cell.classList.add("switch", "straight");
-        switches[`${x},${y}`] = "straight";
-        cell.addEventListener("click", () => toggleSwitch(x, y, cell));
-      }
-      if (type === "E") cell.classList.add("entry");
-      if (type === "X") cell.classList.add("exit");
-      cell.id = `cell-${x}-${y}`;
-      grid.appendChild(cell);
+const RAIL_WIDTH = 10;
+const RAIL_TIE_WIDTH = 5;
+
+// --- Game State ---
+let trains = [];
+let switches = [
+    { x: 200, y: 200, state: 0 }, // 0: top, 1: bottom
+    { x: 400, y: 100, state: 0 },
+    { x: 400, y: 300, state: 0 }
+];
+
+// --- Train Data ---
+const trainColors = ['red', 'blue', 'green', 'orange'];
+let trainSpawnTimer = 0;
+const trainSpawnInterval = 150; // Frames
+
+// --- Functions ---
+
+function drawRail(x1, y1, x2, y2) {
+    ctx.strokeStyle = 'gray';
+    ctx.lineWidth = RAIL_WIDTH;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Draw rail ties
+    const numTies = Math.floor(Math.sqrt((x2 - x1)**2 + (y2 - y1)**2) / 20);
+    for (let i = 0; i < numTies; i++) {
+        const tieX = x1 + (x2 - x1) * (i / numTies);
+        const tieY = y1 + (y2 - y1) * (i / numTies);
+        ctx.fillStyle = 'brown';
+        ctx.fillRect(tieX - RAIL_TIE_WIDTH / 2, tieY - RAIL_WIDTH / 2, RAIL_TIE_WIDTH, RAIL_WIDTH);
     }
+}
 
-    function toggleSwitch(x, y, el) {
-      const current = switches[`${x},${y}`];
-      const next = current === "straight" ? "turn" : "straight";
-      switches[`${x},${y}`] = next;
-      el.classList.toggle("straight");
-      el.classList.toggle("turn");
+function drawSwitch(x, y, state) {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    if (state === 0) {
+        // Top path
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y - 20, x + SWITCH_WIDTH, y - 10);
+    } else {
+        // Bottom path
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y + 20, x + SWITCH_WIDTH, y + 10);
     }
+    ctx.stroke();
+}
 
-    function drawGrid() {
-      for (let y = 0; y < gridSize; y++) {
-        for (let x = 0; x < gridSize; x++) {
-          createCell(x, y, map[y][x]);
-        }
-      }
+function drawTrain(train) {
+    ctx.fillStyle = train.color;
+    ctx.fillRect(train.x, train.y, TRAIN_WIDTH, TRAIN_HEIGHT);
+}
+
+function updateTrain(train) {
+    train.x += TRAIN_SPEED; // Basic movement, you'll need to adjust this
+}
+
+function spawnTrain() {
+    const colorIndex = Math.floor(Math.random() * trainColors.length);
+    const color = trainColors[colorIndex];
+    trains.push({ x: 50, y: 50, color: color }); // Start position
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw rails (Example - adjust coordinates as needed)
+    drawRail(50, 60, 200, 60); // Initial rail
+    drawRail(230, 60, 400, 100); // Rail to top switch
+    drawRail(230, 60, 400, 300); // Rail to bottom switch
+    drawRail(430, 100, 600, 80); // Rail from top switch
+    drawRail(430, 100, 600, 120); // Rail from top switch
+    drawRail(430, 300, 600, 280); // Rail from bottom switch
+    drawRail(430, 300, 600, 320); // Rail from bottom switch
+
+
+    // Draw switches
+    switches.forEach(sw => drawSwitch(sw.x, sw.y, sw.state));
+
+    // Draw trains
+    trains.forEach(train => drawTrain(train));
+}
+
+function update() {
+    trains.forEach(updateTrain);
+
+    // Spawn trains periodically
+    trainSpawnTimer++;
+    if (trainSpawnTimer > trainSpawnInterval) {
+        spawnTrain();
+        trainSpawnTimer = 0;
     }
+}
 
-    function placeTrain() {
-      const cell = document.getElementById(`cell-${train.x}-${train.y}`);
-      const t = document.createElement("div");
-      t.className = "train";
-      t.style.backgroundColor = train.color;
-      cell.appendChild(t);
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// --- Event Listeners ---
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'a' || event.key === 'A') {
+        switches[0].state = 1 - switches[0].state; // Toggle switch 1
+    } else if (event.key === 'f' || event.key === 'F') {
+        switches[1].state = 1 - switches[1].state; // Toggle switch 2
+    } else if (event.key === 'o' || event.key === 'O') {
+        switches[2].state = 1 - switches[2].state; // Toggle switch 3
     }
+});
 
-    function moveTrain() {
-      const dirMap = {
-        right: [1, 0],
-        down: [0, 1],
-        turn: [0, 1],
-      };
-      const [dx, dy] = dirMap[train.dir];
-
-      const prevCell = document.getElementById(`cell-${train.x}-${train.y}`);
-      prevCell.innerHTML = "";
-
-      train.x += dx;
-      train.y += dy;
-
-      const key = `${train.x},${train.y}`;
-      if (switches[key]) {
-        train.dir = switches[key] === "straight" ? "right" : "down";
-      }
-
-      const cell = document.getElementById(`cell-${train.x}-${train.y}`);
-      if (!cell || cell.classList.contains("cell") === false) {
-        alert("💥 تصادم القطار أو خرج عن المسار! حاول مرة أخرى.");
-        location.reload();
-        return;
-      }
-      if (cell.classList.contains("exit")) {
-        alert("🎉 وصلت القطار بنجاح!");
-        return;
-      }
-
-      const t = document.createElement("div");
-      t.className = "train";
-      t.style.backgroundColor = train.color;
-      cell.appendChild(t);
-    }
-
-    drawGrid();
-    placeTrain();
-
-    setInterval(() => {
-      moveTrain();
-    }, 1000);
-  </script>
+// --- Start Game ---
+gameLoop();
+    </script>
 </body>
 </html>
