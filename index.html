@@ -2,18 +2,17 @@
 <html>
 <head>
     <title>Train Puzzle</title>
-    <link rel="stylesheet" href="style.css">
-  <style>
-    #gameCanvas {
-    background-color: #eee;
-    border: 1px solid black;
-}
+    <style>
+        #gameCanvas {
+            background-color: #eee;
+            border: 1px solid black;
+        }
 
-#controls {
-    margin-top: 20px;
-    font-family: sans-serif;
-}
-  </style>
+        #controls {
+            margin-top: 20px;
+            font-family: sans-serif;
+        }
+    </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -23,137 +22,176 @@
         <p>F: Switch 2</p>
         <p>O: Switch 3</p>
     </div>
-  
+
     <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-// --- Constants ---
-const TRAIN_WIDTH = 20;
-const TRAIN_HEIGHT = 15;
-const TRAIN_SPEED = 1;
+        // --- Constants ---
+        const TRAIN_WIDTH = 20;
+        const TRAIN_HEIGHT = 15;
+        const TRAIN_SPEED = 1;
 
-const SWITCH_WIDTH = 30;
-const SWITCH_HEIGHT = 10;
+        const SWITCH_WIDTH = 30;
+        const SWITCH_HEIGHT = 10;
 
-const RAIL_WIDTH = 10;
-const RAIL_TIE_WIDTH = 5;
+        const RAIL_WIDTH = 10;
+        const RAIL_TIE_WIDTH = 5;
 
-// --- Game State ---
-let trains = [];
-let switches = [
-    { x: 200, y: 200, state: 0 }, // 0: top, 1: bottom
-    { x: 400, y: 100, state: 0 },
-    { x: 400, y: 300, state: 0 }
-];
+        // --- Game State ---
+        let trains = [];
+        let switches = [
+            { x: 200, y: 100, state: 0 }, // 0: right, 1: down
+            { x: 400, y: 200, state: 0 }, // 0: right, 1: up
+            { x: 400, y: 400, state: 0 }  // 0: right, 1: down
+        ];
 
-// --- Train Data ---
-const trainColors = ['red', 'blue', 'green', 'orange'];
-let trainSpawnTimer = 0;
-const trainSpawnInterval = 150; // Frames
+        // --- Train Data ---
+        const trainColors = ['red', 'blue', 'green', 'orange'];
+        let trainSpawnTimer = 0;
+        const trainSpawnInterval = 150; // Frames
 
-// --- Functions ---
+        // --- Functions ---
 
-function drawRail(x1, y1, x2, y2) {
-    ctx.strokeStyle = 'gray';
-    ctx.lineWidth = RAIL_WIDTH;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
+        function drawRail(x1, y1, x2, y2) {
+            ctx.strokeStyle = 'gray';
+            ctx.lineWidth = RAIL_WIDTH;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
 
-    // Draw rail ties
-    const numTies = Math.floor(Math.sqrt((x2 - x1)**2 + (y2 - y1)**2) / 20);
-    for (let i = 0; i < numTies; i++) {
-        const tieX = x1 + (x2 - x1) * (i / numTies);
-        const tieY = y1 + (y2 - y1) * (i / numTies);
-        ctx.fillStyle = 'brown';
-        ctx.fillRect(tieX - RAIL_TIE_WIDTH / 2, tieY - RAIL_WIDTH / 2, RAIL_TIE_WIDTH, RAIL_WIDTH);
-    }
-}
+            // Draw rail ties
+            const numTies = Math.floor(Math.sqrt((x2 - x1)**2 + (y2 - y1)**2) / 20);
+            for (let i = 0; i < numTies; i++) {
+                const tieX = x1 + (x2 - x1) * (i / numTies);
+                const tieY = y1 + (y2 - y1) * (i / numTies);
+                ctx.fillStyle = 'brown';
+                ctx.fillRect(tieX - RAIL_TIE_WIDTH / 2, tieY - RAIL_WIDTH / 2, RAIL_TIE_WIDTH, RAIL_WIDTH);
+            }
+        }
 
-function drawSwitch(x, y, state) {
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
+        function drawSwitch(x, y, state) {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
 
-    if (state === 0) {
-        // Top path
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y - 20, x + SWITCH_WIDTH, y - 10);
-    } else {
-        // Bottom path
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y + 20, x + SWITCH_WIDTH, y + 10);
-    }
-    ctx.stroke();
-}
+            if (state === 0) {
+                // Right path
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + SWITCH_WIDTH, y);
+            } else {
+                // Down/Up path (depending on the switch)
+                ctx.moveTo(x, y);
+                if (y < 300) {
+                    ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y + 20, x + SWITCH_WIDTH, y + 30);
+                } else {
+                    ctx.quadraticCurveTo(x + SWITCH_WIDTH / 2, y - 20, x + SWITCH_WIDTH, y - 30);
+                }
+            }
+            ctx.stroke();
+        }
 
-function drawTrain(train) {
-    ctx.fillStyle = train.color;
-    ctx.fillRect(train.x, train.y, TRAIN_WIDTH, TRAIN_HEIGHT);
-}
+        function drawTrain(train) {
+            ctx.fillStyle = train.color;
+            ctx.fillRect(train.x, train.y, TRAIN_WIDTH, TRAIN_HEIGHT);
+        }
 
-function updateTrain(train) {
-    train.x += TRAIN_SPEED; // Basic movement, you'll need to adjust this
-}
+        function updateTrain(train) {
+            // Basic path following (very simplified)
+            if (train.x < switches[0].x) {
+                train.x += TRAIN_SPEED; // Move right to first switch
+            } else if (train.x >= switches[0].x && train.y === 100) {
+                if (switches[0].state === 0) {
+                    train.x += TRAIN_SPEED; // Continue right
+                } else {
+                    train.y += TRAIN_SPEED; // Move down
+                }
+            } else if (train.y < switches[1].y && train.x > switches[0].x + SWITCH_WIDTH) {
+                train.y += TRAIN_SPEED;
+            }
+            else if(train.y < switches[2].y && train.x > switches[0].x + SWITCH_WIDTH){
+                train.y += TRAIN_SPEED;
+            }
+            else if(train.x < switches[1].x && train.y > switches[1].y && switches[1].state == 0){
+                train.x += TRAIN_SPEED;
+            }
+            else if(train.x < switches[2].x && train.y > switches[2].y && switches[2].state == 0){
+                train.x += TRAIN_SPEED;
+            }
+             else if(switches[1].state == 1){
+                train.x += TRAIN_SPEED;
+             }
 
-function spawnTrain() {
-    const colorIndex = Math.floor(Math.random() * trainColors.length);
-    const color = trainColors[colorIndex];
-    trains.push({ x: 50, y: 50, color: color }); // Start position
-}
+             else if(switches[2].state == 1){
+                train.x += TRAIN_SPEED;
+             }
+             else {
+                train.x += TRAIN_SPEED;
+             }
+        }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function spawnTrain() {
+            const colorIndex = Math.floor(Math.random() * trainColors.length);
+            const color = trainColors[colorIndex];
+            trains.push({ x: 50, y: 100, color: color }); // Start position
+        }
 
-    // Draw rails (Example - adjust coordinates as needed)
-    drawRail(50, 60, 200, 60); // Initial rail
-    drawRail(230, 60, 400, 100); // Rail to top switch
-    drawRail(230, 60, 400, 300); // Rail to bottom switch
-    drawRail(430, 100, 600, 80); // Rail from top switch
-    drawRail(430, 100, 600, 120); // Rail from top switch
-    drawRail(430, 300, 600, 280); // Rail from bottom switch
-    drawRail(430, 300, 600, 320); // Rail from bottom switch
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw rails
+            drawRail(50, 100, switches[0].x, 100); // Initial rail to switch 1
+            drawRail(switches[0].x + SWITCH_WIDTH, 100, 300, 100); // Rail after switch 1
+
+            // Switch 1 rails
+            drawRail(switches[0].x, 100, switches[0].x + SWITCH_WIDTH, 100); // Switch 1 - right
+            drawRail(switches[0].x + SWITCH_WIDTH, 100, switches[0].x + SWITCH_WIDTH, 200); // Switch 1 - down
+            drawRail(switches[0].x + SWITCH_WIDTH, 200, switches[1].x , 200); // Rail from switch 1 to switch 2
+            drawRail(switches[0].x + SWITCH_WIDTH, 200, switches[2].x , 400); // Rail from switch 1 to switch 3
 
 
-    // Draw switches
-    switches.forEach(sw => drawSwitch(sw.x, sw.y, sw.state));
+            drawRail(switches[1].x, switches[1].y , switches[1].x + SWITCH_WIDTH, switches[1].y);
+            drawRail(switches[2].x, switches[2].y , switches[2].x + SWITCH_WIDTH, switches[2].y);
 
-    // Draw trains
-    trains.forEach(train => drawTrain(train));
-}
 
-function update() {
-    trains.forEach(updateTrain);
+            // Draw switches
+            switches.forEach(sw => drawSwitch(sw.x, sw.y, sw.state));
 
-    // Spawn trains periodically
-    trainSpawnTimer++;
-    if (trainSpawnTimer > trainSpawnInterval) {
-        spawnTrain();
-        trainSpawnTimer = 0;
-    }
-}
+            // Draw trains
+            trains.forEach(train => drawTrain(train));
+        }
 
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
+        function update() {
+            trains.forEach(updateTrain);
 
-// --- Event Listeners ---
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'a' || event.key === 'A') {
-        switches[0].state = 1 - switches[0].state; // Toggle switch 1
-    } else if (event.key === 'f' || event.key === 'F') {
-        switches[1].state = 1 - switches[1].state; // Toggle switch 2
-    } else if (event.key === 'o' || event.key === 'O') {
-        switches[2].state = 1 - switches[2].state; // Toggle switch 3
-    }
-});
+            // Spawn trains periodically
+            trainSpawnTimer++;
+            if (trainSpawnTimer > trainSpawnInterval) {
+                spawnTrain();
+                trainSpawnTimer = 0;
+            }
+        }
 
-// --- Start Game ---
-gameLoop();
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'a' || event.key === 'A') {
+                switches[0].state = 1 - switches[0].state; // Toggle switch 1
+            } else if (event.key === 'f' || event.key === 'F') {
+                switches[1].state = 1 - switches[1].state; // Toggle switch 2
+            } else if (event.key === 'o' || event.key === 'O') {
+                switches[2].state = 1 - switches[2].state; // Toggle switch 3
+            }
+        });
+
+        // --- Start Game ---
+        gameLoop();
     </script>
 </body>
 </html>
