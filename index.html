@@ -433,6 +433,7 @@
         let endpoints = [];
         let switches = [];
         let tracks = [];
+        let trainDelay = 0; // لتأخير بدء القطارات
 
         // تعريف الألوان
         const colors = {
@@ -567,10 +568,15 @@
                 this.speed = speed;
                 this.size = 20;
                 this.active = true;
+                this.delayed = trainDelay;
+                trainDelay += 60; // تأخير 60 إطار لكل قطار
             }
             
             update() {
-                if (!this.active) return;
+                if (!this.active || this.delayed > 0) {
+                    this.delayed--;
+                    return;
+                }
                 
                 this.progress += this.speed / this.currentTrack.length;
                 
@@ -617,7 +623,7 @@
             }
             
             draw() {
-                if (!this.active) return;
+                if (!this.active || this.delayed > 0) return;
                 
                 // رسم جسم القطار
                 ctx.fillStyle = this.color;
@@ -704,37 +710,51 @@
             endpoints = [];
             switches = [];
             tracks = [];
+            trainDelay = 0;
             
             // تحديث واجهة المستخدم
             scoreElement.textContent = score;
             trainsLeftElement.textContent = trainsLeft;
             gameOverScreen.style.display = 'none';
             
-            // إنشاء المسارات
-            tracks.push(new Track('T1', {x: 50, y: 150}, {x: 250, y: 150}, 'horizontal'));
-            tracks.push(new Track('T2', {x: 250, y: 150}, {x: 450, y: 150}, 'horizontal'));
-            tracks.push(new Track('T3', {x: 250, y: 150}, {x: 250, y: 350}, 'vertical'));
-            tracks.push(new Track('T4', {x: 250, y: 350}, {x: 450, y: 350}, 'horizontal'));
-            tracks.push(new Track('T5', {x: 450, y: 150}, {x: 450, y: 350}, 'vertical'));
-            tracks.push(new Track('T6', {x: 50, y: 350}, {x: 250, y: 350}, 'horizontal'));
-            tracks.push(new Track('T7', {x: 50, y: 150}, {x: 50, y: 350}, 'vertical'));
+            // إنشاء المسارات الجديدة حسب التصميم المطلوب
+            // المسار الرئيسي
+            tracks.push(new Track('T1', {x: 300, y: 50}, {x: 300, y: 200}, 'vertical'));
+            
+            // التفرع عند المحول A
+            tracks.push(new Track('T2', {x: 300, y: 200}, {x: 200, y: 250}, 'curve')); // يسار
+            tracks.push(new Track('T3', {x: 300, y: 200}, {x: 400, y: 250}, 'curve')); // يمين
+            
+            // التفرع عند المحول F (يمين)
+            tracks.push(new Track('T4', {x: 400, y: 250}, {x: 400, y: 150}, 'vertical')); // أعلى
+            tracks.push(new Track('T5', {x: 400, y: 250}, {x: 400, y: 350}, 'vertical')); // أسفل
+            
+            // التفرع عند المحول O (يسار)
+            tracks.push(new Track('T6', {x: 200, y: 250}, {x: 200, y: 150}, 'vertical')); // أعلى
+            tracks.push(new Track('T7', {x: 200, y: 250}, {x: 200, y: 350}, 'vertical')); // أسفل
+            
+            // المسارات النهائية للمخارج
+            tracks.push(new Track('T8', {x: 400, y: 150}, {x: 400, y: 100}, 'vertical'));
+            tracks.push(new Track('T9', {x: 400, y: 350}, {x: 400, y: 400}, 'vertical'));
+            tracks.push(new Track('T10', {x: 200, y: 150}, {x: 200, y: 100}, 'vertical'));
+            tracks.push(new Track('T11', {x: 200, y: 350}, {x: 200, y: 400}, 'vertical'));
             
             // إنشاء المحولات
-            switches.push(new Switch('1', {x: 250, y: 150}, 0, ['T2', 'T3']));
-            switches.push(new Switch('2', {x: 450, y: 150}, 0, ['T5']));
-            switches.push(new Switch('3', {x: 250, y: 350}, 0, ['T4']));
+            switches.push(new Switch('A', {x: 300, y: 200}, 0, ['T2', 'T3'])); // A: بين T1 و (T2, T3)
+            switches.push(new Switch('F', {x: 400, y: 250}, 0, ['T4', 'T5'])); // F: بين T3 و (T4, T5)
+            switches.push(new Switch('O', {x: 200, y: 250}, 0, ['T6', 'T7'])); // O: بين T2 و (T6, T7)
             
             // إنشاء المخارج
-            endpoints.push(new Endpoint('E1', colors.red, {x: 450, y: 150}));
-            endpoints.push(new Endpoint('E2', colors.blue, {x: 450, y: 350}));
-            endpoints.push(new Endpoint('E3', colors.green, {x: 50, y: 350}));
-            endpoints.push(new Endpoint('E4', colors.orange, {x: 50, y: 150}));
+            endpoints.push(new Endpoint('E1', colors.red, {x: 400, y: 100}));
+            endpoints.push(new Endpoint('E2', colors.blue, {x: 400, y: 400}));
+            endpoints.push(new Endpoint('E3', colors.green, {x: 200, y: 100}));
+            endpoints.push(new Endpoint('E4', colors.orange, {x: 200, y: 400}));
             
             // إنشاء القطارات
             trains.push(new Train('1', colors.red, tracks[0]));
-            trains.push(new Train('2', colors.blue, tracks[3]));
-            trains.push(new Train('3', colors.green, tracks[5]));
-            trains.push(new Train('4', colors.orange, tracks[6]));
+            trains.push(new Train('2', colors.blue, tracks[0]));
+            trains.push(new Train('3', colors.green, tracks[0]));
+            trains.push(new Train('4', colors.orange, tracks[0]));
             
             // البدء في حلقة اللعبة
             gameLoop();
